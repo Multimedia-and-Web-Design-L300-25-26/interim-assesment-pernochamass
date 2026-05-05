@@ -10,13 +10,30 @@ dotenv.config();
 const app = express();
 
 /* ── CORS ── */
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+    .split(",")
+    .map((o) => o.trim());
+
 app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
+    cors({
+        origin: (origin, callback) => {
+            // Allow requests with no origin (like curl, postman)
+            if (!origin) return callback(null, true);
+
+            // If '*' is specified in env, allow ALL origins dynamically
+            if (allowedOrigins.includes("*")) {
+                return callback(null, true);
+            }
+
+            // Otherwise, check for exact match
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error(`CORS: origin ${origin} not allowed`));
+            }
+        },
+        credentials: true, // needed to send or receive HTTP-only cookies
+    })
 );
 
 /* ── Body / Cookie parsers ── */
